@@ -4,7 +4,7 @@ An interactive, browser-based simulation designed to build an intuitive understa
 
 ![EEG Model Screenshot](Open_Closed_Fields.png)
 
-## Run from https://dbrang.github.io/Open-Closed-Fields-Demo/
+## Run Demo at https://dbrang.github.io/Open-Closed-Fields-Demo/
 
 ## 🧠 About The Project
 
