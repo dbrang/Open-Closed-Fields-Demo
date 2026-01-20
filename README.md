@@ -4,6 +4,8 @@ An interactive, browser-based simulation designed to build an intuitive understa
 
 ![EEG Model Screenshot](Open_Closed_Fields.png)
 
+## Run from https://dbrang.github.io/Open-Closed-Fields-Demo/
+
 ## 🧠 About The Project
 
 Electroencephalography (EEG) measures electrical activity from the scalp, but it cannot hear every neuron. Why do some active neurons generate strong EEG signals while others remain silent?
