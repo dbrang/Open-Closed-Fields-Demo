@@ -17,7 +17,7 @@ This simulation answers that question by modeling the cortex as a geometric syst
 
 ## ✨ Features
 
-* **Real-time Visualization:** See a cross-section of the cortex with Layers II/III, IV, and V/VI.
+* **Real-time Visualization:** See a cross-section of the cortex with Layers I,II/III, IV, and V/VI.
 * **Interactive Controls:**
     * **Alignment Slider:** Adjust the spatial orientation of pyramidal neurons from random (0%) to perfectly parallel (100%).
     * **Frequency Slider:** Change the firing rate (0.2 Hz to 10 Hz) to see how temporal dynamics affect the trace.
