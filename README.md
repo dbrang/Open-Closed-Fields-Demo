@@ -1,10 +1,23 @@
-# EEG Open vs Closed Field – Geometric Model
+# EEG Open vs Closed Fields
 
-An interactive, browser-based simulation designed to build an intuitive understanding of the biophysical origins of EEG signals. This tool visualizes how neuronal geometry and population alignment determine whether electrical fields summate to form a detectable signal at the scalp ("Open Field") or cancel out ("Closed Field").
+Interactive, browser-based simulations designed to build an intuitive understanding of the biophysical origins of EEG signals. This tool visualizes how neuronal geometry and population alignment determine whether electrical fields summate to form a detectable signal at the scalp ("Open Field") or cancel out ("Closed Field").
 
-![EEG Model Screenshot](Open_Closed_Fields.png)
+![EEG Model Screenshot1](Open_Closed_Fields.png)
+![EEG Model Screenshot2](Dipole_Field_with_EEG.png)
 
 ## Run Demo at https://dbrang.github.io/Open-Closed-Fields-Demo/
+
+## Live Demos (GitHub Pages)
+
+- **Demo A — Dipole Summation Heatmap (open vs closed field via vector cancellation):**  
+  https://dbrang.github.io/Open-Closed-Fields-Demo/Dipole_Field_with_EEG.html
+
+- **Demo B — Geometric Cortex Model + EEG Trace:**  
+  https://dbrang.github.io/Open-Closed-Fields-Demo/Open_Closed_Fields.html
+
+- **: Combined “Stacked” Teaching Page (both demos on one page):**  
+  https://dbrang.github.io/Open-Closed-Fields-Demo/index.html  
+  
 
 ## 🧠 About The Project
 
@@ -39,7 +52,16 @@ Since this project consists of a single HTML file with embedded logic, no build 
 
 ## 🔧 How It Works (Under the Hood)
 
-The simulation uses an HTML5 Canvas loop to calculate the "net instantaneous potential" based on the angle of every neuron relative to the electrode.
+### Dipole Summation Heatmap
+The field is computed by **superposition**: each neuron is modeled as a dipole with a **source** and **sink** separated by a fixed distance. The heatmap sums a stylized inverse-distance contribution from each pole at each pixel location. An “electrode” value is computed by sampling the same summed field at a single point.
+
+Conceptually:
+- Place dipole poles at ±(d/2) along each dipole’s axis.
+- Sum contributions across all dipoles.
+- Track how alignment changes the net field and the electrode readout.
+
+### Geometric Cortex Model + EEG Trace
+The simulation uses a canvas loop to calculate a “net instantaneous potential” based on the angle of every neuron relative to the electrode.
 
 * **Pyramidal Calculation:** The code calculates the cosine of the deviation angle for pyramidal neurons.
     ```javascript
