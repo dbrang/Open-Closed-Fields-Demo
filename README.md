@@ -2,18 +2,18 @@
 
 Interactive, browser-based simulations designed to build an intuitive understanding of the biophysical origins of EEG signals. This tool visualizes how neuronal geometry and population alignment determine whether electrical fields summate to form a detectable signal at the scalp ("Open Field") or cancel out ("Closed Field").
 
-![EEG Model Screenshot1](Open_Closed_Fields.png)
-![EEG Model Screenshot2](Dipole_Field_with_EEG.png)
+![EEG Model Screenshot1](Dipole_Field_with_EEG.png)
+![EEG Model Screenshot2](Open_Closed_Fields.png)
 
 ## Run Demo at https://dbrang.github.io/Open-Closed-Fields-Demo/
 
 ## Live Demos (GitHub Pages)
 
 - **Demo A — Dipole Summation Heatmap (open vs closed field via vector cancellation):**  
-  https://dbrang.github.io/Open-Closed-Fields-Demo/Dipole_Field_with_EEG.html
+  Dipole_Field_with_EEG.html
 
 - **Demo B — Geometric Cortex Model + EEG Trace:**  
-  https://dbrang.github.io/Open-Closed-Fields-Demo/Open_Closed_Fields.html
+  Open_Closed_Fields.html
 
 - **: Combined “Stacked” Teaching Page (both demos on one page):**  
   https://dbrang.github.io/Open-Closed-Fields-Demo/index.html  
