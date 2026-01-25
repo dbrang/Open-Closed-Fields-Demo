@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Open vs Closed Field — Simple Alignment Demo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <style>
+    :root{
+      --bg:#f5f6f8;
+      --panel:#ffffff;
+      --line:#e6e8ee;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --accent:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:var(--text);
+      height:100vh;
+      overflow:hidden;
+      display:flex;
+    }
+    #sidebar{
+      width:330px;
+      background:var(--panel);
+      border-right:1px solid var(--line);
+      padding:18px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    h1{margin:0; font-size:16px; font-weight:750}
+    p{margin:0; font-size:12px; color:var(--muted); line-height:1.4}
+    .group{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+    label{
+      font-size:12px;
+      font-weight:650;
+      color:#374151;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:baseline;
+      margin-top:10px;
+    }
+    .val{color:var(--accent); font-weight:800}
+    input[type=range]{width:100%}
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 78px;
+      gap:10px;
+      align-items:center;
+      margin-top:8px;
+    }
+    .status{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background: #f8fafc;
+      font-size:12px;
+      color:#334155;
+      line-height:1.45;
+      margin-top:auto;
+    }
+    .tag{
+      display:inline-block;
+      padding:3px 8px;
+      border-radius:999px;
+      background:#eef2ff;
+      border:1px solid #e0e7ff;
+      color:#3730a3;
+      font-weight:750;
+      font-size:11px;
+      margin-bottom:8px;
+    }
+    #canvasWrap{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+    }
+    canvas{display:block; border-radius:14px; box-shadow:0 18px 50px rgba(0,0,0,.12)}
+    .hint{
+      position:absolute;
+      left:18px;
+      bottom:18px;
+      background:rgba(255,255,255,.92);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      color:#334155;
+      max-width:560px;
+      line-height:1.4;
+      pointer-events:none;
+    }
+    .hint b{color:#111827}
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <div>
+      <h1>EEG Summation: Open vs Closed Field</h1>
+      <p>
+        This demo visualizes the influence of neuron alignment on the electrical field that spreads up to EEG recordings. Use Neuron Count and Alignment sliders to see examples of open fields (neurons aligned) and closed fields (neurons misaligned so fields cancel out).
+      </p>
+    </div>
+
+    <div class="group">
+      <label for="nSlider">Neuron count <span class="val" id="nVal">2</span></label>
+      <div class="row">
+        <input id="nSlider" type="range" min="2" max="21" value="2" />
+        <div style="font-size:12px; color:var(--muted); text-align:right">N</div>
+      </div>
+
+      <label for="aSlider">Alignment <span class="val" id="aVal">100%</span></label>
+      <div class="row">
+        <input id="aSlider" type="range" min="0" max="100" value="100" />
+        <div style="font-size:12px; color:var(--muted); text-align:right">%</div>
+      </div>
+
+<p style="margin-top:10px">
+        <b>100%</b>: all dipoles parallel and pointing upward (open field).<br/>
+        <b>0%</b>: dipole angles are evenly spaced over 360°, so the net dipole vector cancels (closed field tendency).</p>
+    </div>
+
+    <div class="status" id="statusBox">
+      <div class="tag" id="tag">Open field</div>
+      <div id="statusText">Neurons are largely parallel. Dipoles sum constructively, producing a strong far-field tendency.</div>
+      <div style="margin-top:10px; color:var(--muted)">
+        Readout: <b>|Pnet| / (N·d)</b> = <span id="pRatio">1.00</span>
+      </div>
+      <div style="margin-top:6px; color:var(--muted)">
+        EEG electrode: <b>V</b> (×100, normalized) = <span id="eegVal">0.00</span>
+      </div>
+      <div style="margin-top:6px; font-size:12px; color:var(--muted); line-height:1.4">
+
+        Where <b>Pnet</b> = Σ<sub>i</sub> <b>p</b><sub>i</sub> is the vector sum of individual dipole moments,
+        <b>N</b> is the neuron (dipole) count, and <b>d</b> is the pole-to-pole separation (dipole length).
+        In this toy model, all dipoles share the same <b>d</b>, so the readout is a 0–1 “coherence” measure. <b>V</b> is the summed potential at the EEG electrode location (same model as the heatmap), normalized by the current max |V| for a stable readout.
+      </div>
+
+    </div>
+  </div>
+
+  <div id="canvasWrap">
+    <div class="hint">
+      <b>How to read this:</b> the heatmap shows the <b>summed potential</b> from all dipoles on a 2D slice (colors are auto-normalized for visibility).
+      As alignment decreases, the <b>net dipole vector</b> shrinks because dipoles point in different directions, illustrating how “closed field” geometry reduces the far-field.
+    </div>
+  </div>
+
+<script>
+/*
+  Simple EEG summation demo (deterministic)
+  - Two sliders: N and Alignment
+  - Large neurons, tightly packed
+  - Deterministic, continuous fan-out (no randomness)
+  - Heatmap contrast boosted to make summation/cancellation visually salient
+*/
+
+let neurons = [];
+let grid = null;
+let gridCols = 0, gridRows = 0;
+let gridScale = 10;         // smaller blocks = smoother, more legible field
+let dipoleSep = 140;        // px (drawing and field)
+let poleR = 18;             // pole radius
+let shaftW = 14;            // shaft thickness
+
+// Field falloff exponent: lower => wider field spread / more interaction
+let fieldFalloffGamma = 0.7;
+
+
+
+// Field constants (used for heatmap + EEG electrode readout)
+const FIELD_K = 240;
+const FIELD_EPS = 6.0;
+
+// EEG electrode (top-of-panel sensor)
+let eegValEl;
+let electrode = { x: 0, y: 0, raw: 0, norm: 0 };
+// UI
+let nSlider, aSlider, nVal, aVal, statusText, tagEl, pRatioEl;
+
+function setup() {
+  const wrap = document.getElementById('canvasWrap');
+  const cnv = createCanvas(wrap.clientWidth - 40, wrap.clientHeight - 40);
+  cnv.parent('canvasWrap');
+
+  nSlider = document.getElementById('nSlider');
+  aSlider = document.getElementById('aSlider');
+  nVal = document.getElementById('nVal');
+  aVal = document.getElementById('aVal');
+  statusText = document.getElementById('statusText');
+  tagEl = document.getElementById('tag');
+  pRatioEl = document.getElementById('pRatio');
+
+    eegValEl = document.getElementById('eegVal');
+
+nSlider.addEventListener('input', updateSim);
+  aSlider.addEventListener('input', updateSim);
+  noLoop();     // redraw only on changes
+  updateSim();
+}
+
+function windowResized() {
+  const wrap = document.getElementById('canvasWrap');
+  resizeCanvas(wrap.clientWidth - 40, wrap.clientHeight - 40);
+  updateSim();
+}
+
+function updateSim() {
+  const N = parseInt(nSlider.value, 10);
+  const A = parseInt(aSlider.value, 10);
+
+  nVal.textContent = N;
+  aVal.textContent = A + "%";
+  // Field spread is fixed (wide) for clearer interaction.
+  fieldFalloffGamma = 0.7;
+  generateNeurons(N, A);
+  computeHeatmap();
+  updateStatus();
+  updateElectrodeReadout();
+  redraw();
+}
+
+// -----------------------------
+// Deterministic gradual alignment
+// -----------------------------
+
+function generateNeurons(N, alignmentPct) {
+  neurons = [];
+
+  const align = alignmentPct / 100.0; // 1 = aligned
+  const mis = 1.0 - align;            // 0..1
+  const baseAngle = -HALF_PI;         // "up"
+
+  // Tight packing so rotations overlap (and so higher N fits on screen)
+  // ~2× closer than prior version, with a safety clamp to keep the array within view.
+  const baseSpacing = dipoleSep * 0.275;
+  const maxSpan = Math.max(80, width - dipoleSep * 1.2);
+  const spacing = (N > 1) ? Math.min(baseSpacing, maxSpan / (N - 1)) : baseSpacing;
+const totalW = (N - 1) * spacing;
+  const startX = width / 2 - totalW / 2;
+  const y = height * 0.58;
+
+  // Keep one neuron vertical (anchor), and rotate others deterministically.
+  // At 0% alignment (mis=1), dipole angles are evenly spaced over 360°,
+  // which guarantees Σ unit vectors = 0 (net dipole cancels) for any N >= 2.
+  const anchor = Math.floor((N - 1) / 2);
+
+  for (let i = 0; i < N; i++) {
+    const dIdx = i - anchor;                 // ...,-2,-1,0,1,2,...
+    const offset = (TWO_PI * dIdx) / N;      // evenly spaced angles
+    const angle = baseAngle + mis * offset;  // continuous interpolation
+    neurons.push({ x: startX + i * spacing, y, angle });
+  }
+}
+
+
+// -----------------------------
+// Field model (source-sink pair)
+// -----------------------------
+function computeHeatmap() {
+  gridCols = Math.floor(width / gridScale);
+  gridRows = Math.floor(height / gridScale);
+  grid = new Float32Array(gridCols * gridRows);
+  const k = FIELD_K;
+  const eps = FIELD_EPS;
+
+  let maxAbs = 1e-9;
+
+  for (let j = 0; j < gridRows; j++) {
+    for (let i = 0; i < gridCols; i++) {
+      const x = i * gridScale + gridScale / 2;
+      const y = j * gridScale + gridScale / 2;
+
+      let V = 0;
+      for (const n of neurons) {
+        const dx = Math.cos(n.angle);
+        const dy = Math.sin(n.angle);
+
+        const sx = n.x + (dipoleSep / 2) * dx;
+        const sy = n.y + (dipoleSep / 2) * dy;
+        const kx = n.x - (dipoleSep / 2) * dx;
+        const ky = n.y - (dipoleSep / 2) * dy;
+
+        const rS = Math.pow(dist(x, y, sx, sy) + eps, fieldFalloffGamma);
+        const rK = Math.pow(dist(x, y, kx, ky) + eps, fieldFalloffGamma);
+
+        V += (k / rS) - (k / rK);
+      }
+
+      grid[j * gridCols + i] = V;
+      const a = Math.abs(V);
+      if (a > maxAbs) maxAbs = a;
+    }
+  }
+  computeHeatmap.maxAbs = maxAbs;
+}
+
+// -----------------------------
+// EEG electrode readout
+// -----------------------------
+function electrodePotential(ex, ey) {
+  const k = FIELD_K;
+  const eps = FIELD_EPS;
+
+  let V = 0;
+  for (const n of neurons) {
+    const dx = Math.cos(n.angle);
+    const dy = Math.sin(n.angle);
+
+    const sx = n.x + (dipoleSep / 2) * dx;
+    const sy = n.y + (dipoleSep / 2) * dy;
+    const kx = n.x - (dipoleSep / 2) * dx;
+    const ky = n.y - (dipoleSep / 2) * dy;
+
+    const rS = Math.pow(dist(ex, ey, sx, sy) + eps, fieldFalloffGamma);
+    const rK = Math.pow(dist(ex, ey, kx, ky) + eps, fieldFalloffGamma);
+
+    V += (k / rS) - (k / rK);
+  }
+  return V;
+}
+
+function updateElectrodeReadout() {
+  // Place electrode above the net dipole annotation.
+  electrode.x = width / 2;
+  electrode.y = height * 0.105;
+
+  electrode.raw = electrodePotential(electrode.x, electrode.y);
+  const maxAbs = computeHeatmap.maxAbs || 1;
+  electrode.norm = electrode.raw / maxAbs;
+
+  if (eegValEl) {
+    const disp = electrode.norm * 100.0;
+    const sign = disp >= 0 ? "+" : "";
+    const digits = Math.abs(disp) >= 1 ? 0 : 1;
+    eegValEl.textContent = `${sign}${disp.toFixed(digits)}`;
+  }
+}
+
+function drawSkullAndElectrode() {
+  const cx = width / 2;
+
+  // Skull arc (stylized)
+  const arcCx = cx;
+  const arcCy = height * 0.045;
+  const arcW = width * 0.78;
+  const arcH = height * 0.28;
+
+  push();
+  noFill();
+  stroke(0, 0, 0, 70);
+  strokeWeight(5);
+  arc(arcCx, arcCy, arcW, arcH, radians(200), TWO_PI - radians(20));
+  pop();
+
+  // Electrode marker
+  const ex = electrode.x || cx;
+  const ey = electrode.y || height * 0.105;
+
+  // Color by sign/magnitude of measured potential (normalized)
+  const white = 252;
+  const pos = { r: 255, g: 70,  b: 70 };
+  const neg = { r: 70,  g: 115, b: 255 };
+
+  let t = constrain(electrode.norm * 2.0, -1, 1); // emphasize for visibility
+  const a = Math.pow(Math.abs(t), 0.65);
+
+  let r, g, b;
+  if (t >= 0) {
+    r = lerp(white, pos.r, a);
+    g = lerp(white, pos.g, a);
+    b = lerp(white, pos.b, a);
+  } else {
+    r = lerp(white, neg.r, a);
+    g = lerp(white, neg.g, a);
+    b = lerp(white, neg.b, a);
+  }
+
+  push();
+  stroke(0, 0, 0, 150);
+  strokeWeight(2.5);
+  fill(r, g, b);
+
+  // Wide EEG electrode (stylized oval spanning most of the panel width)
+  const ew = width * 0.78;
+  const eh = 22;
+  ellipse(ex, ey, ew, eh);
+
+  // Lead line down toward cortex (from electrode center)
+  stroke(0, 0, 0, 110);
+  strokeWeight(3);
+  line(ex, ey + eh/2, ex, ey + eh/2 + 20);
+
+  // Labels (placed left of the net-dipole arrow to avoid overlap)
+  noStroke();
+  fill(0, 0, 0, 190);
+
+  const labelX = ex - 18;
+
+  textAlign(RIGHT, BOTTOM);
+  textSize(12);
+  const topLabelY = Math.max(14, ey - eh/2 - 10);
+  text("EEG electrode", labelX, topLabelY);
+
+  const disp = electrode.norm * 100.0;
+  const sign = disp >= 0 ? "+" : "";
+  const digits = Math.abs(disp) >= 1 ? 0 : 1;
+
+  textAlign(RIGHT, TOP);
+  textSize(14);
+  const bottomLabelY = Math.min(height - 14, ey + eh/2 + 6);
+  text(`V ≈ ${sign}${disp.toFixed(digits)}`, labelX, bottomLabelY);
+  pop();
+}
+
+function drawHeatmap() {
+  noStroke();
+  const maxAbs = computeHeatmap.maxAbs || 1;
+
+  // Contrast controls (fixed; no extra sliders)
+  const gain = 2.4;      // boosts mid-range values
+  const gamma = 0.55;    // < 1 makes values away from 0 more visible
+  const white = 252;
+
+  // Endpoints (saturated, high salience)
+  const pos = {r:255, g:70,  b:70};   // red
+  const neg = {r:70,  g:115, b:255};  // blue
+
+  for (let j = 0; j < gridRows; j++) {
+    for (let i = 0; i < gridCols; i++) {
+      const V = grid[j * gridCols + i];
+
+      // Normalize, then apply gain + gamma for stronger field visibility
+      let t = V / maxAbs;
+      t = constrain(t * gain, -1, 1);
+      const a = Math.pow(Math.abs(t), gamma);
+      const s = Math.sign(t);
+
+      // Mix endpoint color with near-white background
+      let r, g, b;
+      if (s >= 0) {
+        r = lerp(white, pos.r, a);
+        g = lerp(white, pos.g, a);
+        b = lerp(white, pos.b, a);
+      } else {
+        r = lerp(white, neg.r, a);
+        g = lerp(white, neg.g, a);
+        b = lerp(white, neg.b, a);
+      }
+
+      fill(r, g, b);
+      rect(i * gridScale, j * gridScale, gridScale + 1, gridScale + 1);
+    }
+  }
+
+  // subtle vignette
+  push();
+  noFill();
+  stroke(0,0,0,24);
+  strokeWeight(16);
+  rect(0,0,width,height,20);
+  pop();
+}
+
+// -----------------------------
+// Neuron drawing (big and obvious)
+// -----------------------------
+function drawNeuron(x, y, angle) {
+  push();
+  translate(x, y);
+  rotate(angle);
+
+  // shaft
+  stroke(70, 70, 70, 210);
+  strokeWeight(shaftW);
+  strokeCap(ROUND);
+  line(-dipoleSep/2, 0, dipoleSep/2, 0);
+
+  // sink (blue) on left
+  noStroke();
+  fill(30, 75, 230);
+  circle(-dipoleSep/2, 0, poleR*2.2);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textSize(16);
+  text("−", -dipoleSep/2, 1);
+
+  // source (red) on right
+  fill(235, 60, 60);
+  circle(dipoleSep/2, 0, poleR*2.2);
+  fill(255);
+  text("+", dipoleSep/2, 1);
+
+  // arrowhead near + end
+  fill(235, 60, 60);
+  const ax = dipoleSep/2 + poleR*1.1;
+  triangle(ax, 0, ax-14, -10, ax-14, 10);
+
+  pop();
+}
+
+// -----------------------------
+// Net dipole readout + status
+// -----------------------------
+function netDipole() {
+  let px = 0, py = 0;
+  const d = dipoleSep;
+  for (const n of neurons) {
+    px += d * Math.cos(n.angle);
+    py += d * Math.sin(n.angle);
+  }
+  return {px, py, d, mag: Math.sqrt(px*px + py*py)};
+}
+
+function drawNetDipoleArrow() {
+  const P = netDipole();
+  const N = neurons.length || 1;
+  const ratio = P.mag / (N * (P.d || 1));
+
+  const cx = width/2;
+  // Place the net-dipole annotation a bit lower so it stays in view on shorter screens.
+  const cy = height*0.22;
+
+  // Desired arrow length (scaled by coherence ratio)
+  const L0 = 140 * ratio;
+
+  const ang = Math.atan2(P.py, P.px);
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+
+  // Clamp arrow so the tip stays within the canvas bounds.
+  const margin = 28;
+  let maxLx = Infinity;
+  if (Math.abs(c) > 1e-6) {
+    maxLx = (c > 0) ? (width - margin - cx) / c : (cx - margin) / (-c);
+  }
+  let maxLy = Infinity;
+  if (Math.abs(s) > 1e-6) {
+    maxLy = (s > 0) ? (height - margin - cy) / s : (cy - margin) / (-s);
+  }
+  const L = Math.max(0, Math.min(L0, maxLx, maxLy));
+
+  push();
+  stroke(0,0,0,160);
+  strokeWeight(4);
+  fill(0,0,0,160);
+
+  const x2 = cx + L * c;
+  const y2 = cy + L * s;
+
+  line(cx, cy, x2, y2);
+
+  const head = 14;
+  const a1 = ang + radians(150);
+  const a2 = ang - radians(150);
+  triangle(
+    x2, y2,
+    x2 + head * Math.cos(a1), y2 + head * Math.sin(a1),
+    x2 + head * Math.cos(a2), y2 + head * Math.sin(a2)
+  );
+
+  noStroke();
+  fill(0,0,0,190);
+  // Move the text left so it doesn't overlap the arrow shaft.
+  textAlign(RIGHT, CENTER);
+  textSize(14);
+  const labelY = Math.max(margin, cy - 26);
+  const labelX = cx - 18;
+  text(`Net dipole |Pnet|/(N·d) ≈ ${ratio.toFixed(2)}`, labelX, labelY);
+  pop();
+}
+
+
+function updateStatus() {
+  const P = netDipole();
+  const N = neurons.length || 1;
+  const ratio = P.mag / (N * (P.d || 1));
+  pRatioEl.textContent = ratio.toFixed(2);
+
+  if (ratio > 0.70) {
+    tagEl.textContent = "Open field";
+    tagEl.style.background = "#ecfdf5";
+    tagEl.style.borderColor = "#bbf7d0";
+    tagEl.style.color = "#065f46";
+    statusText.textContent = "Neurons are largely parallel. Dipoles sum constructively, producing a strong far-field tendency.";
+  } else if (ratio < 0.25) {
+    tagEl.textContent = "Closed field tendency";
+    tagEl.style.background = "#fef2f2";
+    tagEl.style.borderColor = "#fecaca";
+    tagEl.style.color = "#7f1d1d";
+    statusText.textContent = "Neurons are strongly misaligned. Dipole vectors cancel, reducing the far-field (even if local fields exist).";
+  } else {
+    tagEl.textContent = "Partial summation";
+    tagEl.style.background = "#fffbeb";
+    tagEl.style.borderColor = "#fde68a";
+    tagEl.style.color = "#78350f";
+    statusText.textContent = "Intermediate alignment. Some constructive summation remains, but cancellation grows as neurons fan out.";
+  }
+}
+
+function draw() {
+  background(245);
+
+  if (grid) drawHeatmap();
+
+  // subtle axes
+  stroke(0, 0, 0, 35);
+  strokeWeight(2);
+  line(width/2, 0, width/2, height);
+  line(0, height/2, width, height/2);
+
+  // neurons
+  for (const n of neurons) drawNeuron(n.x, n.y, n.angle);
+
+  
+  // skull + EEG electrode
+  drawSkullAndElectrode();
+
+// net dipole arrow
+  drawNetDipoleArrow();
+}
+</script>
+</body>
+</html>
